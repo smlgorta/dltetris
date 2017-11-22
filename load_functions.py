@@ -17,6 +17,15 @@ def pickleLoad(path):
     fileObject = open(path, 'rb')
     return pickle.load(fileObject)
 
+def parseState(state):
+    splitted_state = state.split("|")
+    board = np.zeros((10, 10))
+    for row in range(1, len(splitted_state)):
+        splitted_row = splitted_state[row].split(":")
+        for col in range(0, len(splitted_row)):
+            if splitted_row[col] != "":
+                board[row-1][int(splitted_row[col])] = 1
+    return board
 
 def loadAndParseData(input_path, output_path):
     print("loading csv")
@@ -27,15 +36,7 @@ def loadAndParseData(input_path, output_path):
             parsed_states.append(parseState(states[i]).flatten())
         return parsed_states
 
-    def parseState(state):
-        splitted_state = state.split("|")
-        board = np.zeros((10, 10))
-        for row in range(1, len(splitted_state)):
-            splitted_row = splitted_state[row].split(":")
-            for col in range(0, len(splitted_row)):
-                if splitted_row[col] != "":
-                    board[row-1][int(splitted_row[col])] = 1
-        return board
+
 
     print("parsing states")
     csv["stateaction"] = parseStates(csv["stateaction"])
@@ -123,3 +124,32 @@ def loadParsedAndMakePairwiseComparisons(input_path, output_path):
                     else:
                         pw_dataset = np.vstack([pw_dataset, pw])
     pickleSave(output_path, pw_dataset)
+
+def makePairwiseComparisons(placements, steps):
+    pw_dataset = []
+    for i in range(len(steps)):
+        step = placements[placements['step'] == steps[i]]
+        step = step.reset_index(drop=True)
+        for j in range(len(step)):
+            for k in range(len(step)):
+                pw = []
+                if (j != k):
+                    pw = [step['stateaction'][j], step['stateaction'][k], step['value'][j] - step['value'][k]]
+                    if (len(pw_dataset) == 0):
+                        pw_dataset = pw
+                    else:
+                        pw_dataset = np.vstack([pw_dataset, pw])
+    return pw_dataset
+
+def makePairwiseComparisons(placements):
+    pw_dataset = []
+    for j in range(len(placements)):
+            for k in range(len(placements)):
+                pw = []
+                if (j != k):
+                    pw = [placements['stateaction'][j], placements['stateaction'][k], float(placements['value'][j]) - float(placements['value'][k])]
+                    if (len(pw_dataset) == 0):
+                        pw_dataset = pw
+                    else:
+                        pw_dataset = np.vstack([pw_dataset, pw])
+    return pw_dataset
